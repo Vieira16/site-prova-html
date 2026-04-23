@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster v1.2 - Painel Administrativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --bg-app: #f8fafc;
+            --sidebar: #1e293b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-app); 
+            margin: 0; 
+            color: #1e293b; 
+        }
+
+        /* Estrutura de Navegação */
+        .app-shell { display: flex; min-height: 100vh; }
+        
+        .sidebar { 
+            width: 240px; 
+            background: var(--sidebar); 
+            color: white; 
+            padding: 20px;
+            display: none;
+        }
+
+        .sidebar.visible { display: flex; flex-direction: column; }
+
+        .main-content { flex: 1; padding: 30px; }
+
+        /* Login Personalizado */
+        .auth-wrapper { 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: #e2e8f0; 
+        }
+
+        .login-card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+
+        /* UI Components */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .data-table { 
+            width: 100%; 
+            border-spacing: 0; 
+            background: white; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .data-table th { background: #f1f5f9; padding: 12px 15px; text-align: left; font-size: 13px; text-transform: uppercase; }
+        .data-table td { padding: 12px 15px; border-top: 1px solid #f1f5f9; }
+
+        .input-field { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            margin-top: 5px; 
+            margin-bottom: 15px;
+        }
+
+        .action-btn { 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { border: 1px solid #cbd5e1; background: white; }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
+
+        .status-pill { 
+            padding: 4px 8px; 
+            border-radius: 99px; 
+            font-size: 11px; 
+            font-weight: bold; 
+        }
+        .bg-ok { background: #dcfce7; color: #166534; }
+        .bg-low { background: #fef9c3; color: #854d0e; }
+
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="view-auth" class="auth-wrapper view-section active" style="height: 100vh;">
+        <div class="login-card">
+            <h2 style="margin-top:0">StockMaster</h2>
+            <p style="color:#64748b; font-size: 14px">Acesse sua conta para gerenciar</p>
+            <label>Usuário</label>
+            <input type="text" id="user_ref" class="input-field" value="admin@sistema.com">
+            <label>Chave de Acesso</label>
+            <input type="password" id="pass_ref" class="input-field" value="12345">
+            <button class="action-btn btn-primary" style="width: 100%" onclick="App.initSession()">Entrar no Sistema</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-shell" style="display: none;">
+        <aside class="sidebar visible">
+            <h3>Painel</h3>
+            <nav>
+                <p onclick="App.changeTab('inventory')" style="cursor:pointer">📦 Produtos</p>
+                <p onclick="App.changeTab('ledger')" style="cursor:pointer">📊 Movimentações</p>
+                <hr style="opacity: 0.1">
+                <p onclick="location.reload()" style="color:#fca5a5; cursor:pointer">🚪 Sair</p>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <section id="view-inventory" class="view-section">
+                <header>
+                    <h1>Catálogo de Itens</h1>
+                    <button class="action-btn btn-primary" onclick="App.openModal('product')">+ Adicionar Item</button>
+                </header>
+                
+                <div style="margin-bottom: 20px;">
+                    <input type="text" placeholder="Filtrar por nome..." class="input-field" style="max-width: 300px;" onkeyup="App.filterTable(this.value)">
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ref</th>
+                            <th>Item</th>
+                            <th>Preço</th>
+                            <th>Qtd</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="render-catalog"></tbody>
+                </table>
+            </section>
+
+            <section id="view-ledger" class="view-section">
+                <header>
+                    <h1>Movimentações de Estoque</h1>
+                    <button class="action-btn btn-primary" onclick="App.openModal('entry')">Registrar Entrada/Saída</button>
+                </header>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Produto</th>
+                            <th>Operação</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody id="render-ledger"></tbody>
+                </table>
+            </section>
+
+            <section id="view-editor" class="view-section" style="max-width: 500px; background: white; padding: 25px; border-radius: 8px;">
+                <h2 id="editor-title">Editor</h2>
+                <div id="form-context"></div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="action-btn btn-outline" onclick="App.changeTab('inventory')">Voltar</button>
+                    <button class="action-btn btn-primary" id="save-trigger">Confirmar Registro</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        /**
+         * Core Application Logic
+         * Centralizado para evitar funções espalhadas pelo escopo global
+         */
+        const App = {
+            db: {
+                items: JSON.parse(localStorage.getItem('_stk_items')) || [
+                    {id: 101, name: 'Monitor 24 Pol', desc: 'LED Full HD', price: 890.00, qty: 5, min: 10},
+                    {id: 102, name: 'Teclado Mecânico', desc: 'Switch Blue', price: 250.00, qty: 25, min: 5}
+                ],
+                logs: JSON.parse(localStorage.getItem('_stk_logs')) || []
+            },
+
+            initSession() {
+                document.getElementById('view-auth').classList.remove('active');
+                document.getElementById('app-container').style.display = 'flex';
+                this.changeTab('inventory');
+            },
+
+            changeTab(tabName) {
+                document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+                const target = document.getElementById(`view-${tabName}`);
+                if(target) target.classList.add('active');
+
+                if(tabName === 'inventory') this.renderInventory();
+                if(tabName === 'ledger') this.renderLogs();
+            },
+
+            renderInventory(filter = '') {
+                const container = document.getElementById('render-catalog');
+                container.innerHTML = '';
+
+                this.db.items.filter(i => i.name.toLowerCase().includes(filter.toLowerCase())).forEach(item => {
+                    const isLow = item.qty <= item.min;
+                    container.innerHTML += `
+                        <tr>
+                            <td>#${item.id}</td>
+                            <td><strong>${item.name}</strong><br><small style="color:#64748b">${item.desc}</small></td>
+                            <td>R$ ${Number(item.price).toLocaleString('pt-BR')}</td>
+                            <td>${item.qty}</td>
+                            <td><span class="status-pill ${isLow ? 'bg-low' : 'bg-ok'}">${isLow ? 'REPOR' : 'OK'}</span></td>
+                            <td>
+                                <button class="action-btn btn-danger" onclick="App.removeItem(${item.id})">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            },
+
+            renderLogs() {
+                const container = document.getElementById('render-ledger');
+                container.innerHTML = this.db.logs.reverse().map(log => `
+                    <tr>
+                        <td>${new Date(log.ts).toLocaleDateString()}</td>
+                        <td>${log.itemName}</td>
+                        <td style="color: ${log.type === 'IN' ? 'green' : 'red'}">${log.type === 'IN' ? '⬇ ENTRADA' : '⬆ SAÍDA'}</td>
+                        <td>${log.val} unidades</td>
+                    </tr>
+                `).join('');
+            },
+
+            openModal(mode) {
+                const ctx = document.getElementById('form-context');
+                this.changeTab('editor');
+                
+                if(mode === 'product') {
+                    document.getElementById('editor-title').innerText = "Novo Item";
+                    ctx.innerHTML = `
+                        <input type="text" id="f_name" placeholder="Nome do Produto" class="input-field">
+                        <input type="number" id="f_price" placeholder="Preço Venda" class="input-field">
+                        <input type="number" id="f_qty" placeholder="Qtd Inicial" class="input-field">
+                        <input type="number" id="f_min" placeholder="Estoque Mínimo" class="input-field">
+                    `;
+                    document.getElementById('save-trigger').onclick = () => this.saveItem();
+                } else {
+                    document.getElementById('editor-title').innerText = "Movimentação";
+                    const options = this.db.items.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+                    ctx.innerHTML = `
+                        <select id="f_ref" class="input-field">${options}</select>
+                        <select id="f_type" class="input-field">
+                            <option value="IN">Entrada (+)</option>
+                            <option value="OUT">Saída (-)</option>
+                        </select>
+                        <input type="number" id="f_val" placeholder="Quantidade" class="input-field">
+                    `;
+                    document.getElementById('save-trigger').onclick = () => this.saveLog();
+                }
+            },
+
+            saveItem() {
+                const newItem = {
+                    id: Math.floor(Math.random() * 9000),
+                    name: document.getElementById('f_name').value,
+                    price: document.getElementById('f_price').value,
+                    qty: parseInt(document.getElementById('f_qty').value) || 0,
+                    min: parseInt(document.getElementById('f_min').value) || 0,
+                    desc: 'Cadastrado manualmente'
+                };
+                this.db.items.push(newItem);
+                this.sync();
+                this.changeTab('inventory');
+            },
+
+            saveLog() {
+                const id = parseInt(document.getElementById('f_ref').value);
+                const type = document.getElementById('f_type').value;
+                const val = parseInt(document.getElementById('f_val').value);
+                
+                const item = this.db.items.find(i => i.id === id);
+                if(type === 'OUT' && item.qty < val) return alert("Saldo insuficiente");
+
+                item.qty += (type === 'IN' ? val : -val);
+                this.db.logs.push({ ts: Date.now(), itemName: item.name, type, val });
+                
+                this.sync();
+                this.changeTab('ledger');
+            },
+
+            removeItem(id) {
+                if(!confirm("Remover permanentemente?")) return;
+                this.db.items = this.db.items.filter(i => i.id !== id);
+                this.sync();
+                this.renderInventory();
+            },
+
+            filterTable(val) {
+                this.renderInventory(val);
+            },
+
+            sync() {
+                localStorage.setItem('_stk_items', JSON.stringify(this.db.items));
+                localStorage.setItem('_stk_logs', JSON.stringify(this.db.logs));
+            }
+        };
+    </script>
+</body>
+</html>

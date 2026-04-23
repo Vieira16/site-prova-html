@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estoque Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --border: #252830;
+    --border-bright: #32363f;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #f0c040;
+    --accent-dim: rgba(240,192,64,0.12);
+    --red: #f25757;
+    --red-dim: rgba(242,87,87,0.12);
+    --green: #4cd97b;
+    --green-dim: rgba(76,217,123,0.12);
+    --blue: #60a5fa;
+    --radius: 6px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --transition: 150ms ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  /* ─── SCREEN MANAGER ──────────────────────── */
+  .screen { display: none; width: 100%; max-width: 980px; }
+  .screen.active { display: block; }
+
+  /* ─── LOGIN ───────────────────────────────── */
+  #tela-login {
+    max-width: 400px;
+    margin-top: 80px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 40px 36px;
+    animation: slideUp .4s ease;
+  }
+
+  .login-logo {
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-family: var(--mono);
+    margin-bottom: 6px;
+  }
+
+  .login-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 32px;
+    line-height: 1.1;
+  }
+
+  /* ─── TOPBAR ──────────────────────────────── */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+
+  .topbar-brand {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: .06em;
+  }
+
+  .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ─── CARDS / STATS ───────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.green  { color: var(--green); }
+
+  /* ─── MAIN CONTENT BOX ────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+
+  .card-actions { display: flex; gap: 8px; }
+
+  /* ─── SEARCH ──────────────────────────────── */
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap input {
+    padding-left: 32px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  /* ─── FORM ELEMENTS ───────────────────────── */
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color var(--transition);
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { resize: vertical; height: 70px; }
+
+  select option { background: #1e2128; }
+
+  /* ─── BUTTONS ─────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f11;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--muted);
+    border-color: var(--border-bright);
+  }
+  .btn-outline:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border-color: rgba(242,87,87,0.3);
+  }
+  .btn-danger:hover { background: rgba(242,87,87,0.22); }
+
+  .btn-edit {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(240,192,64,0.3);
+  }
+  .btn-edit:hover { background: rgba(240,192,64,0.22); }
+
+  .btn-full { width: 100%; justify-content: center; padding: 12px; }
+
+  /* ─── TABLE ───────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: #1c1e24;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 16px;
+    font-weight: 400;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    color: var(--text);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr {
+    transition: background var(--transition);
+  }
+
+  tbody tr:hover { background: rgba(255,255,255,.02); }
+
+  .actions-col { display: flex; gap: 6px; }
+
+  /* ─── BADGES ──────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+  }
+
+  .badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .badge-ok    { background: var(--green-dim); color: var(--green); }
+  .badge-ok::before { background: var(--green); }
+  .badge-warn  { background: var(--accent-dim); color: var(--accent); }
+  .badge-warn::before { background: var(--accent); }
+  .badge-in    { background: var(--green-dim); color: var(--green); }
+  .badge-out   { background: var(--red-dim); color: var(--red); }
+
+  /* ─── ALERT ───────────────────────────────── */
+  .alert-banner {
+    background: var(--accent-dim);
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    display: none;
+    line-height: 1.6;
+  }
+
+  .alert-banner strong {
+    display: block;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ─── FORM PAGE ───────────────────────────── */
+  .form-page {
+    max-width: 440px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    animation: slideUp .3s ease;
+  }
+
+  .form-page-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .form-page-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    font-family: var(--mono);
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ─── EMPTY STATE ─────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
+  .empty-text { font-size: 13px; font-family: var(--mono); }
+
+  /* ─── DIVIDER ─────────────────────────────── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── ANIMATIONS ──────────────────────────── */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card { animation: slideUp .3s ease; }
+
+  /* ─── RESPONSIVE ──────────────────────────── */
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stat-card:last-child { grid-column: span 2; }
+    .form-row { grid-template-columns: 1fr; }
+    th:nth-child(3), td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOGIN
+════════════════════════════════════════ -->
+<div id="tela-login" class="screen active" style="display:flex;justify-content:center;">
+  <div class="container-login" style="width:100%;max-width:400px;margin-top:80px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:40px 36px;animation:slideUp .4s ease;">
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">▸ Sistema</div>
+      <h1 style="font-size:26px;font-weight:800;margin-bottom:8px;">Estoque Pro</h1>
+      <p style="font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:32px;">Gestão de inventário</p>
+
+      <div class="form-group"><label>E-mail</label><input type="email" id="login-email" value="admin@empresa.com"></div>
+      <div class="form-group"><label>Senha</label><input type="password" id="login-senha" value="12345"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="navegar('tela-produtos')">Entrar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PRODUTOS
+════════════════════════════════════════ -->
+<div id="tela-produtos" class="screen">
+  <div class="topbar">
+    <span class="topbar-brand">▸ ESTOQUE PRO</span>
+    <div class="topbar-user">
+      <span>Administrador</span>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:12px;" onclick="navegar('tela-login')">Sair</button>
+    </div>
+  </div>
+
+  <div id="stats-produtos" class="stats-grid"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Produtos</span>
+      <div class="card-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" placeholder="Buscar produto..." style="width:200px;" onkeyup="renderizarProdutos(this.value)">
+        </div>
+        <button class="btn btn-primary" onclick="abrirNovoProduto()">+ Novo</button>
+        <button class="btn btn-outline" onclick="navegar('tela-estoque')">Estoque →</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Descrição</th>
+          <th>Preço</th>
+          <th>Qtd.</th>
+          <th>Mín.</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabela-produtos-body"></tbody>
+    </table>
+    <div id="empty-produtos" class="empty-state" style="display:none;">
+      <div class="empty-icon">📦</div>
+      <div class="empty-text">Nenhum produto cadastrado.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     FORM PRODUTO
+════════════════════════════════════════ -->
+<div id="tela-form-produto" class="screen" style="display:flex;justify-content:center;">
+  <div class="form-page" style="margin-top:40px;">
+    <div class="form-page-title" id="form-produto-titulo">Novo Produto</div>
+    <div class="form-page-sub" id="form-produto-sub">Preencha os dados do produto</div>
+    <input type="hidden" id="prod-id">
+
+    <div class="form-group"><label>Nome *</label><input type="text" id="prod-nome" placeholder="Ex: Caneta Azul"></div>
+    <div class="form-group"><label>Descrição</label><textarea id="prod-desc" placeholder="Detalhes opcionais..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Preço (R$) *</label><input type="number" step="0.01" id="prod-preco" placeholder="0,00"></div>
+      <div class="form-group"><label>Quantidade</label><input type="number" id="prod-qtd" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label>Estoque Mínimo</label><input type="number" id="prod-min" placeholder="0"></div>
+
+    <div class="form-footer">
+      <button class="btn btn-outline" onclick="navegar('tela-produtos')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarProduto()">Salvar produto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     ESTOQUE
+════════════════════════════════════════ -->
+<div id="tela-estoque" class="screen">
+  <div class="topbar">
+    <span class="topbar-brand">▸ ESTOQUE PRO</span>
+    <div class="topbar-user">
+      <span>Administrador</span>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:12px;" onclick="navegar('tela-login')">Sair</button>
+    </div>
+  </div>
+
+  <div id="stats-estoque" class="stats-grid"></div>
+
+  <div id="alerta-estoque" class="alert-banner">
+    <strong>⚠ atenção · estoque baixo</strong>
+    <span id="alerta-texto"></span>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Saldo de Estoque</span>
+      <div class="card-actions">
+        <button class="btn btn-primary" onclick="abrirNovaMovimentacao()">+ Movimentação</button>
+        <button class="btn btn-outline" onclick="navegar('tela-produtos')">← Produtos</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Produto</th><th>Quantidade</th><th>Mínimo</th><th>Status</th></tr>
+      </thead>
+      <tbody id="tabela-estoque-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section-label">Histórico de Movimentações</div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Qtd.</th></tr>
+      </thead>
+      <tbody id="tabela-movimentacoes-body"></tbody>
+    </table>
+    <div id="empty-mov" class="empty-state" style="display:none;">
+      <div class="empty-icon">📋</div>
+      <div class="empty-text">Nenhuma movimentação registrada.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     FORM MOVIMENTAÇÃO
+════════════════════════════════════════ -->
+<div id="tela-nova-movimentacao" class="screen" style="display:flex;justify-content:center;">
+  <div class="form-page" style="margin-top:40px;">
+    <div class="form-page-title">Nova Movimentação</div>
+    <div class="form-page-sub">Registrar entrada ou saída</div>
+
+    <div class="form-group">
+      <label>Produto *</label>
+      <select id="mov-produto"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select id="mov-tipo">
+          <option value="Entrada">Entrada</option>
+          <option value="Saída">Saída</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantidade *</label>
+        <input type="number" id="mov-qtd" value="1" min="1">
+      </div>
+    </div>
+    <div class="form-group"><label>Data *</label><input type="date" id="mov-data"></div>
+
+    <div class="form-footer">
+      <button class="btn btn-outline" onclick="navegar('tela-estoque')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarMovimentacao()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+  // ── DADOS ────────────────────────────────────
+  let produtos      = JSON.parse(localStorage.getItem('ep_produtos'))      || [];
+  let movimentacoes = JSON.parse(localStorage.getItem('ep_movimentacoes')) || [];
+
+  // ── NAVEGAÇÃO ─────────────────────────────────
+  function navegar(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'tela-produtos') renderizarProdutos();
+    if (id === 'tela-estoque')  renderizarEstoque();
+  }
+
+  // ── STATS ──────────────────────────────────────
+  function renderStats(containerId) {
+    const total   = produtos.length;
+    const baixo   = produtos.filter(p => p.quantidade <= p.minimo).length;
+    const normal  = total - baixo;
+
+    document.getElementById(containerId).innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total de Produtos</div>
+        <div class="stat-value accent">${total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Estoque Normal</div>
+        <div class="stat-value green">${normal}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Estoque Baixo</div>
+        <div class="stat-value ${baixo > 0 ? 'red' : 'green'}">${baixo}</div>
+      </div>
+    `;
+  }
+
+  // ── PRODUTOS ──────────────────────────────────
+  function renderizarProdutos(busca = '') {
+    renderStats('stats-produtos');
+    const tbody = document.getElementById('tabela-produtos-body');
+    const empty = document.getElementById('empty-produtos');
+    tbody.innerHTML = '';
+
+    const filtrados = produtos.filter(p =>
+      p.nome.toLowerCase().includes(busca.toLowerCase())
+    );
+
+    if (filtrados.length === 0) {
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      filtrados.forEach(p => {
+        const status = p.quantidade <= p.minimo
+          ? '<span class="badge badge-warn">Baixo</span>'
+          : '<span class="badge badge-ok">Normal</span>';
+
+        tbody.innerHTML += `
+          <tr>
+            <td style="color:var(--muted);font-size:11px;">${p.id.toString().slice(-4)}</td>
+            <td style="font-weight:600;color:var(--text);">${p.nome}</td>
+            <td style="color:var(--muted);">${p.descricao || '—'}</td>
+            <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
+            <td>${p.quantidade}</td>
+            <td>${p.minimo}</td>
+            <td>${status}</td>
+            <td>
+              <div class="actions-col">
+                <button class="btn btn-edit" style="padding:5px 10px;font-size:12px;" onclick="editarProduto(${p.id})">Editar</button>
+                <button class="btn btn-danger" style="padding:5px 10px;font-size:12px;" onclick="excluirProduto(${p.id})">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+  }
+
+  function abrirNovoProduto() {
+    document.getElementById('form-produto-titulo').innerText = 'Novo Produto';
+    document.getElementById('form-produto-sub').innerText = 'Preencha os dados do produto';
+    ['prod-id','prod-nome','prod-desc','prod-preco','prod-qtd','prod-min'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    navegar('tela-form-produto');
+  }
+
+  function editarProduto(id) {
+    const p = produtos.find(p => p.id === id);
+    if (!p) return;
+    document.getElementById('form-produto-titulo').innerText = 'Editar Produto';
+    document.getElementById('form-produto-sub').innerText   = p.nome;
+    document.getElementById('prod-id').value    = p.id;
+    document.getElementById('prod-nome').value  = p.nome;
+    document.getElementById('prod-desc').value  = p.descricao;
+    document.getElementById('prod-preco').value = p.preco;
+    document.getElementById('prod-qtd').value   = p.quantidade;
+    document.getElementById('prod-min').value   = p.minimo;
+    navegar('tela-form-produto');
+  }
+
+  function salvarProduto() {
+    const id   = document.getElementById('prod-id').value;
+    const nome = document.getElementById('prod-nome').value.trim();
+    if (!nome) return alert('O nome é obrigatório!');
+
+    const produto = {
+      id:        id ? parseInt(id) : Date.now(),
+      nome,
+      descricao: document.getElementById('prod-desc').value,
+      preco:     parseFloat(document.getElementById('prod-preco').value) || 0,
+      quantidade:parseInt(document.getElementById('prod-qtd').value)     || 0,
+      minimo:    parseInt(document.getElementById('prod-min').value)     || 0
+    };
+
+    if (id) {
+      const idx = produtos.findIndex(p => p.id == id);
+      produtos[idx] = produto;
+    } else {
+      produtos.push(produto);
+    }
+
+    salvar();
+    navegar('tela-produtos');
+  }
+
+  function excluirProduto(id) {
+    if (!confirm('Excluir este produto?')) return;
+    produtos = produtos.filter(p => p.id !== id);
+    salvar();
+    renderizarProdutos();
+  }
+
+  // ── ESTOQUE ───────────────────────────────────
+  function renderizarEstoque() {
+    renderStats('stats-estoque');
+
+    const tbodyEst = document.getElementById('tabela-estoque-body');
+    const tbodyMov = document.getElementById('tabela-movimentacoes-body');
+    const alertBox  = document.getElementById('alerta-estoque');
+    const alertText = document.getElementById('alerta-texto');
+    const emptyMov  = document.getElementById('empty-mov');
+
+    tbodyEst.innerHTML = '';
+    tbodyMov.innerHTML = '';
+
+    const alertas = [];
+
+    produtos.forEach(p => {
+      const baixo = p.quantidade <= p.minimo;
+      if (baixo) alertas.push(`"${p.nome}" com ${p.quantidade} un. (mín. ${p.minimo})`);
+
+      const badge = baixo
+        ? '<span class="badge badge-warn">Baixo</span>'
+        : '<span class="badge badge-ok">Normal</span>';
+
+      tbodyEst.innerHTML += `
+        <tr>
+          <td style="color:var(--muted);font-size:11px;">${p.id.toString().slice(-4)}</td>
+          <td style="font-weight:600;">${p.nome}</td>
+          <td>${p.quantidade}</td>
+          <td style="color:var(--muted);">${p.minimo}</td>
+          <td>${badge}</td>
+        </tr>
+      `;
+    });
+
+    alertBox.style.display = alertas.length ? 'block' : 'none';
+    alertText.innerHTML = alertas.join('<br>');
+
+    const movOrdenadas = [...movimentacoes].reverse();
+
+    if (movOrdenadas.length === 0) {
+      emptyMov.style.display = 'block';
+    } else {
+      emptyMov.style.display = 'none';
+      movOrdenadas.forEach(m => {
+        const prod = produtos.find(p => p.id == m.produtoId);
+        const nome = prod ? prod.nome : 'Produto removido';
+        const data = m.data.split('-').reverse().join('/');
+        const badge = m.tipo === 'Entrada'
+          ? '<span class="badge badge-in">Entrada</span>'
+          : '<span class="badge badge-out">Saída</span>';
+
+        tbodyMov.innerHTML += `
+          <tr>
+            <td style="color:var(--muted);">${data}</td>
+            <td>${nome}</td>
+            <td>${badge}</td>
+            <td>${m.quantidade}</td>
+          </tr>
+        `;
+      });
+    }
+  }
+
+  function abrirNovaMovimentacao() {
+    const sel = document.getElementById('mov-produto');
+    sel.innerHTML = '<option value="">Selecione um produto...</option>';
+    produtos.forEach(p => {
+      sel.innerHTML += `<option value="${p.id}">${p.nome} (${p.quantidade} un.)</option>`;
+    });
+    document.getElementById('mov-data').valueAsDate = new Date();
+    navegar('tela-nova-movimentacao');
+  }
+
+  function salvarMovimentacao() {
+    const produtoId = document.getElementById('mov-produto').value;
+    const tipo      = document.getElementById('mov-tipo').value;
+    const qtd       = parseInt(document.getElementById('mov-qtd').value);
+    const data      = document.getElementById('mov-data').value;
+
+    if (!produtoId || qtd <= 0 || !data) return alert('Preencha todos os campos!');
+
+    const idx = produtos.findIndex(p => p.id == produtoId);
+    if (tipo === 'Entrada') {
+      produtos[idx].quantidade += qtd;
+    } else {
+      if (produtos[idx].quantidade < qtd) return alert('Estoque insuficiente!');
+      produtos[idx].quantidade -= qtd;
+    }
+
+    movimentacoes.push({ id: Date.now(), produtoId, tipo, quantidade: qtd, data });
+    salvar();
+    navegar('tela-estoque');
+  }
+
+  // ── UTILS ──────────────────────────────────────
+  function salvar() {
+    localStorage.setItem('ep_produtos',      JSON.stringify(produtos));
+    localStorage.setItem('ep_movimentacoes', JSON.stringify(movimentacoes));
+  }
+
+  // ── SEED ───────────────────────────────────────
+  if (produtos.length === 0) {
+    produtos = [
+      { id: 1, nome: 'Caneta Azul',  descricao: 'Bic ponta fina',  preco: 2.50,  quantidade: 15, minimo: 20 },
+      { id: 2, nome: 'Caderno A4',   descricao: '200 folhas',       preco: 15.90, quantidade: 30, minimo: 10 },
+      { id: 3, nome: 'Grampeador',   descricao: 'Médio 26/6',       preco: 28.00, quantidade:  8, minimo:  5 },
+    ];
+    salvar();
+  }
+</script>
+</body>
+</html>
